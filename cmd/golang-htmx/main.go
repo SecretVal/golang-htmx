@@ -52,9 +52,7 @@ type Data struct {
 
 func NewData() Data {
 	return Data{
-		Contacts: []Contact{
-			NewContact("a", "a"),
-		},
+		Contacts: []Contact{},
 	}
 }
 
@@ -115,7 +113,7 @@ func main() {
 
 	page := NewPage()
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
