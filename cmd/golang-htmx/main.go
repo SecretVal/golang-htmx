@@ -58,13 +58,13 @@ func NewData() Data {
 	}
 }
 
-func (d *Data) HasEmail(email string) bool {
+func (d *Data) HasEmail(email string) (bool, int) {
 	for _, contact := range d.Contacts {
 		if contact.Email == email {
-			return true
+			return true, contact.ID
 		}
 	}
-	return false
+	return false, -1
 }
 
 func (d *Data) IndexOfId(id int) int {
@@ -128,7 +128,8 @@ func main() {
 	mux.HandleFunc("POST /contacts", func(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
 		email := r.FormValue("email")
-		if page.Data.HasEmail(email) {
+		found, _ := page.Data.HasEmail(email)
+		if found {
 			formData := NewFormData()
 			formData.Values["name"] = name
 			formData.Values["email"] = email
@@ -197,7 +198,22 @@ func main() {
 		if index == -1 {
 			http.Error(w, "Invalid id", http.StatusNotFound)
 		}
-		contact := page.Data.EditContact(page.Data.Contacts[page.Data.IndexOfId(id)], r.FormValue("name"), r.PathValue("email"))
+		name := r.FormValue("name")
+		email := r.FormValue("email")
+		found, id_of_found := page.Data.HasEmail(email)
+		if found && id_of_found != id {
+			formData := NewFormData()
+			formData.Values["name"] = name
+			formData.Values["email"] = email
+			formData.Values["id"] = fmt.Sprint(id)
+			formData.Errors["email"] = "There already is a contact with this email"
+			err = renderer.Render(w, "form-change", formData)
+			if err != nil {
+				panic(err)
+			}
+			return
+		}
+		contact := page.Data.EditContact(page.Data.Contacts[page.Data.IndexOfId(id)], name, email)
 		err = renderer.Render(w, "oob-contact", contact)
 		if err != nil {
 			panic(err)

@@ -35,7 +35,7 @@
 <form hx-post="/contacts/edit/{{.Values.id}}" hx-swap="outerHTML">
 	name: <input type="text" name="name" {{ if .Values.name }} value="{{.Values.name}}" {{end}} />
 	email: <input type="text" name="email" {{ if .Values.email }} value="{{.Values.email}}" {{end}} />
-	<button type="submit">Submit</button>ind
+	<button type="submit">Submit</button>
 	{{if .Errors.email }}
 	<p style="color: red;">There already is a contact with that email</p>
 	{{ end }}
