@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/golang-htmx/golang-htmx/cmd/middleware"
 )
@@ -26,17 +28,19 @@ func NewTemplates() *Templates {
 var id = 0
 
 type Contact struct {
-	Name  string
-	Email string
-	ID    int
+	Name      string
+	Email     string
+	ID        int
+	CreatedAt string
 }
 
 func NewContact(name string, email string) Contact {
 	id++
 	return Contact{
-		Name:  name,
-		Email: email,
-		ID:    id,
+		Name:      name,
+		Email:     email,
+		ID:        id,
+		CreatedAt: time.Now().Format(time.RFC1123),
 	}
 }
 
@@ -72,6 +76,14 @@ func (d *Data) IndexOfId(id int) int {
 	return -1
 }
 
+func (d *Data) EditContact(old_contact Contact, name string, email string) Contact {
+	contact := old_contact
+	contact.Email = email
+	contact.Name = name
+	d.Contacts[d.IndexOfId(contact.ID)] = contact
+	return contact
+}
+
 type FormData struct {
 	Values map[string]string
 	Errors map[string]string
@@ -85,8 +97,8 @@ func NewFormData() FormData {
 }
 
 type Page struct {
-	Data
-	FormData
+	Data     Data
+	FormData FormData
 }
 
 func NewPage() Page {
@@ -116,7 +128,7 @@ func main() {
 	mux.HandleFunc("POST /contacts", func(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
 		email := r.FormValue("email")
-		if page.HasEmail(email) {
+		if page.Data.HasEmail(email) {
 			formData := NewFormData()
 			formData.Values["name"] = name
 			formData.Values["email"] = email
@@ -130,7 +142,7 @@ func main() {
 			return
 		}
 		contact := NewContact(name, email)
-		page.Contacts = append(page.Contacts, contact)
+		page.Data.Contacts = append(page.Data.Contacts, contact)
 
 		err := renderer.Render(w, "form", NewFormData())
 		if err != nil {
@@ -148,11 +160,48 @@ func main() {
 		if err != nil {
 			http.Error(w, "Invalid id", http.StatusBadRequest)
 		}
-		index := page.IndexOfId(id)
+		index := page.Data.IndexOfId(id)
 		if index == -1 {
 			http.Error(w, "Invalid id", http.StatusNotFound)
 		}
-		page.Contacts = append(page.Contacts[:index], page.Contacts[index+1:]...)
+		page.Data.Contacts = append(page.Data.Contacts[:index], page.Data.Contacts[index+1:]...)
+	})
+
+	mux.HandleFunc("PATCH /contacts/{id}", func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			http.Error(w, "Invalid id", http.StatusBadRequest)
+		}
+		index := page.Data.IndexOfId(id)
+		if index == -1 {
+			http.Error(w, "Invalid id", http.StatusNotFound)
+		}
+		formData := NewFormData()
+		formData.Values["name"] = page.Data.Contacts[index].Name
+		formData.Values["email"] = page.Data.Contacts[index].Email
+		formData.Values["id"] = fmt.Sprint(id)
+		err = renderer.Render(w, "form-change", formData)
+		if err != nil {
+			panic(err)
+		}
+	})
+
+	mux.HandleFunc("POST /contacts/edit/{id}", func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			http.Error(w, "Invalid id", http.StatusBadRequest)
+		}
+		index := page.Data.IndexOfId(id)
+		if index == -1 {
+			http.Error(w, "Invalid id", http.StatusNotFound)
+		}
+		contact := page.Data.EditContact(page.Data.Contacts[page.Data.IndexOfId(id)], r.FormValue("name"), r.PathValue("email"))
+		err = renderer.Render(w, "oob-contact", contact)
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	server := http.Server{
