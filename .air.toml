@@ -1,0 +1,11 @@
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "tmp"
+
+[build]
+  args_bin = []
+  bin = "./tmp/main"
+  cmd = "go build -o ./tmp/main cmd/golang-htmx/main.go"
+  exclude_dir = ["node_modules", "assets", "tmp", "vendor", "testdata"]
+  include_dir = ["cmd", "views", "pkg"]
+  include_ext = ["go", "html"]

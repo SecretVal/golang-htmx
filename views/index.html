@@ -1,0 +1,65 @@
+{{ block "index" . }}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>neovim</title>
+	<script src="https://unpkg.com/htmx.org@1.9.11"
+		integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
+		crossorigin="anonymous"></script>
+</head>
+
+<body>
+	{{ template "form" . }}
+	<hr />
+	{{ template "contacts" . }}
+</body>
+
+</html>
+{{ end }}
+
+{{ block "form" . }}
+<form hx-post="/contacts" hx-swap="outerHTML">
+	name: <input type="text" name="name" {{ if .Values.name }} value="{{.Values.name}}" {{end}} />
+	email: <input type="text" name="email" {{ if .Values.email }} value="{{.Values.email}}" {{end}} />
+	<button type="submit">Submit</button>
+	{{if .Errors.email }}
+	<p style="color: red;">There already is a contact with that email</p>
+	{{ end }}
+</form>
+{{ end }}
+
+
+{{ block "contacts" . }}
+<div style="display: flex; flex-direction: column;" id="contacts">
+	{{ range .Contacts }}
+	{{template "contact" . }}
+	{{ end }}
+</div>
+{{ end }}
+
+
+{{ block "contact" . }}
+<div style="display: flex;" id="contact-{{.ID}}">
+	<div>
+		Name: <span>{{ .Name }}</span>
+		Email: <span>{{ .Email }}</span>
+	</div>
+	<div hx-target="#contact-{{.ID}}" hx-swap="outerHTML" style="width: 1rem; cursor: pointer"
+		hx-delete="/contacts/{{.ID}}">
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+			<path fill="none" d="M0 0h24v24H0z" />
+			<path
+				d="M4 2h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1zM3 6h18v16a1 1 0 01-1 1H4a1 1 0 01-1-1V6zm3 3v9a1 1 0 002 0v-9a1 1 0 00-2 0zm5 0v9a1 1 0 002 0v-9a1 1 0 00-2 0zm5 0v9a1 1 0 002 0v-9a1 1 0 00-2 0z" />
+		</svg>
+	</div>
+</div>
+{{ end }}
+
+{{ block "oob-contact" . }}
+<div id="contacts" hx-swap-oob="afterbegin">
+	{{ template "contact" . }}
+</div>
+{{ end }}
