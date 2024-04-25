@@ -40,7 +40,7 @@ func NewContact(name string, email string) Contact {
 		Name:      name,
 		Email:     email,
 		ID:        id,
-		CreatedAt: time.Now().Format(time.RFC1123),
+		CreatedAt: time.Now().Format(time.Stampc),
 	}
 }
 
@@ -114,10 +114,6 @@ func main() {
 	page := NewPage()
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.Error(w, "Not found", http.StatusNotFound)
-			return
-		}
 		err := renderer.Render(w, "index", page)
 		if err != nil {
 			panic(err)
