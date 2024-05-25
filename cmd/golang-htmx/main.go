@@ -40,7 +40,7 @@ func NewContact(name string, email string) Contact {
 		Name:      name,
 		Email:     email,
 		ID:        id,
-		CreatedAt: time.Now().Format(time.Stampc),
+		CreatedAt: time.Now().Format(time.Stamp),
 	}
 }
 
